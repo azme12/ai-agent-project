@@ -230,14 +230,47 @@ go build -o ai-agent cmd/main.go
 ./ai-agent
 ```
 
-### Docker (Future Enhancement)
-```dockerfile
-FROM golang:1.21-alpine
-WORKDIR /app
-COPY . .
-RUN go build -o ai-agent cmd/main.go
-EXPOSE 8080
-CMD ["./ai-agent"]
+### Docker Deployment
+
+#### Build and Run with Docker
+```bash
+# Build the Docker image
+docker build -t ai-agent .
+
+# Run the container
+docker run -d --name ai-agent -p 8080:8080 ai-agent
+
+# Test the container
+curl http://localhost:8080/health
+```
+
+#### Using Docker Compose
+```bash
+# Start with docker-compose
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop the service
+docker-compose down
+```
+
+#### Docker Testing
+```bash
+# Run automated Docker tests
+./docker-test.sh
+```
+
+#### Environment Variables with Docker
+```bash
+# Run with environment variables
+docker run -d --name ai-agent \
+  -p 8080:8080 \
+  -e GOOGLE_CALENDAR_API_KEY="your_key" \
+  -e SENDGRID_API_KEY="your_key" \
+  -e GEMINI_API_KEY="your_key" \
+  ai-agent
 ```
 
 ## 🤝 Contributing
