@@ -2,7 +2,7 @@
 
 An intelligent AI agent that automates executive assistant tasks including scheduling meetings, sending emails, and processing natural language commands.
 
-## 🎯 Project Overview
+##  Project Overview
 
 This AI agent serves as an **Executive Assistant in a Tech Startup**, automating high-impact, repetitive tasks to increase productivity and efficiency.
 
@@ -122,7 +122,7 @@ The agent uses environment variables for configuration:
 | `SERVER_PORT` | HTTP server port | "8080" |
 | `LOG_LEVEL` | Logging level | "info" |
 
-## 🎯 Use Cases
+## Use Cases
 
 ### Executive Assistant Tasks Automated
 
