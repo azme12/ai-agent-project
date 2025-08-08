@@ -36,7 +36,7 @@ This AI agent serves as an **Executive Assistant in a Tech Startup**, automating
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Prerequisites
 
@@ -196,7 +196,7 @@ The agent uses environment variables for all configuration. Copy `env.example` t
 
 *Required for full functionality. Without API keys, the service runs in mock mode.
 
-## 🎯 Use Cases
+##  Use Cases
 
 ### Executive Assistant Tasks Automated
 
@@ -402,38 +402,8 @@ docker push your-account.dkr.ecr.us-east-1.amazonaws.com/ai-agent:latest
 - Docker health checks
 - Graceful shutdown handling
 
-## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
 
-## 📄 License
-
-This project is licensed under the MIT License.
-
-## 🆘 Support
-
-For issues and questions:
-- Create an issue in the GitHub repository
-- Check the logs for debugging information
-- Verify API keys are correctly configured
-- Test with the provided test script
-
-## 🎯 Assignment Compliance
-
-This project meets all the assignment requirements:
-
-✅ **Role & Industry**: Executive Assistant in Tech Startup  
-✅ **Tasks Automated**: Meeting scheduling, email automation, task reminders  
-✅ **Third-party APIs**: Google Calendar API, SendGrid API, Gemini API  
-✅ **Proactive Actions**: Daily reminders, meeting alerts, weekly/monthly summaries  
-✅ **Backend Focus**: Robust backend with minimal UI (REST API)  
-✅ **Free Tier Usage**: All APIs support free tiers  
-✅ **Natural Language Processing**: Advanced command parsing and understanding  
-✅ **Automation**: Scheduler runs proactive tasks automatically  
 
 ---
 
