@@ -312,7 +312,7 @@ go build -o ai-agent cmd/main.go
 ./ai-agent
 ```
 
-## 🚀 Deployment
+##  Deployment
 
 ### Local Development
 ```bash
