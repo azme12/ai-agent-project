@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/azme12/ai-agent-project/internal/config"
@@ -15,6 +17,26 @@ type GeminiService struct {
 	client *http.Client
 }
 
+type GeminiRequest struct {
+	Contents []GeminiContent `json:"contents"`
+}
+
+type GeminiContent struct {
+	Parts []GeminiPart `json:"parts"`
+}
+
+type GeminiPart struct {
+	Text string `json:"text"`
+}
+
+type GeminiResponse struct {
+	Candidates []GeminiCandidate `json:"candidates"`
+}
+
+type GeminiCandidate struct {
+	Content GeminiContent `json:"content"`
+}
+
 func NewGeminiService(cfg *config.Config) *GeminiService {
 	return &GeminiService{
 		config: cfg,
@@ -23,34 +45,36 @@ func NewGeminiService(cfg *config.Config) *GeminiService {
 }
 
 func (g *GeminiService) ProcessCommand(command string) (string, error) {
-	// TODO: Implement actual Gemini API integration
-
 	if g.config.GeminiAPIKey == "" {
-		fmt.Printf("Gemini API key not configured. Using mock implementation.\n")
-		fmt.Printf("Processing command with Gemini: %s\n", command)
-
-		// Mock response based on command type
-		if len(command) > 0 {
-			return fmt.Sprintf("Processed command: %s", command), nil
-		}
-		return "No command provided", nil
+		return g.mockProcessCommand(command)
 	}
 
-	// Real Gemini API implementation:
-	url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
+	url := fmt.Sprintf("%s/models/gemini-pro:generateContent", g.config.GeminiURL)
 
-	requestData := map[string]interface{}{
-		"contents": []map[string]interface{}{
+	request := GeminiRequest{
+		Contents: []GeminiContent{
 			{
-				"parts": []map[string]string{
-					{"text": fmt.Sprintf("You are an AI assistant. Process this command: %s", command)},
+				Parts: []GeminiPart{
+					{
+						Text: fmt.Sprintf(`You are an AI executive assistant. Process this command and respond with a clear, actionable response: %s
+
+Please respond in a helpful, professional manner. If the command involves scheduling, emailing, or task management, provide specific details about what actions should be taken.`, command),
+					},
 				},
 			},
 		},
 	}
 
-	jsonData, _ := json.Marshal(requestData)
-	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	jsonData, err := json.Marshal(request)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal request: %v", err)
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %v", err)
+	}
+
 	req.Header.Set("Content-Type", "application/json")
 
 	// Add API key as query parameter
@@ -65,35 +89,42 @@ func (g *GeminiService) ProcessCommand(command string) (string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("gemini API error: %d", resp.StatusCode)
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("gemini API error: %d - %s", resp.StatusCode, string(body))
 	}
 
-	var response map[string]interface{}
+	var response GeminiResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return "", fmt.Errorf("failed to decode response: %v", err)
 	}
 
-	// Extract text from response
-	if candidates, ok := response["candidates"].([]interface{}); ok && len(candidates) > 0 {
-		if candidate, ok := candidates[0].(map[string]interface{}); ok {
-			if content, ok := candidate["content"].(map[string]interface{}); ok {
-				if parts, ok := content["parts"].([]interface{}); ok && len(parts) > 0 {
-					if part, ok := parts[0].(map[string]interface{}); ok {
-						if text, ok := part["text"].(string); ok {
-							return text, nil
-						}
-					}
-				}
-			}
-		}
+	if len(response.Candidates) == 0 {
+		return "", fmt.Errorf("no response from Gemini API")
 	}
 
+	if len(response.Candidates[0].Content.Parts) == 0 {
+		return "", fmt.Errorf("empty response from Gemini API")
+	}
+
+	return response.Candidates[0].Content.Parts[0].Text, nil
+}
+
+func (g *GeminiService) mockProcessCommand(command string) (string, error) {
+	fmt.Printf("Gemini API key not configured. Using mock implementation.\n")
 	fmt.Printf("Processing command with Gemini: %s\n", command)
 
-	// Mock response based on command type
-	if len(command) > 0 {
-		return fmt.Sprintf("Processed command: %s", command), nil
+	// Mock responses based on command type
+	lowerCommand := strings.ToLower(command)
+
+	if strings.Contains(lowerCommand, "schedule") || strings.Contains(lowerCommand, "meeting") {
+		return "I'll help schedule a meeting. Please provide the attendees, date, time, and meeting title.", nil
+	} else if strings.Contains(lowerCommand, "email") || strings.Contains(lowerCommand, "send") {
+		return "I'll help send an email. Please provide the recipient, subject, and message content.", nil
+	} else if strings.Contains(lowerCommand, "remind") || strings.Contains(lowerCommand, "task") {
+		return "I'll set a reminder. Please provide the task details and deadline.", nil
+	} else if strings.Contains(lowerCommand, "calendar") || strings.Contains(lowerCommand, "schedule") {
+		return "I'll check the calendar. What specific information would you like to know about the schedule?", nil
 	}
 
-	return "No command provided", nil
+	return fmt.Sprintf("I understand you want me to: %s. How can I help with this?", command), nil
 }

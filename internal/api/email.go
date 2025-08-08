@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -15,47 +16,79 @@ type EmailService struct {
 	client *http.Client
 }
 
+type SendGridEmail struct {
+	Personalizations []SendGridPersonalization `json:"personalizations"`
+	From             SendGridFrom              `json:"from"`
+	Subject          string                    `json:"subject"`
+	Content          []SendGridContent         `json:"content"`
+}
+
+type SendGridPersonalization struct {
+	To []SendGridTo `json:"to"`
+}
+
+type SendGridTo struct {
+	Email string `json:"email"`
+	Name  string `json:"name,omitempty"`
+}
+
+type SendGridFrom struct {
+	Email string `json:"email"`
+	Name  string `json:"name,omitempty"`
+}
+
+type SendGridContent struct {
+	Type  string `json:"type"`
+	Value string `json:"value"`
+}
+
 func NewSendGridEmailService(cfg *config.Config) *EmailService {
 	return &EmailService{
 		config: cfg,
-		client: &http.Client{Timeout: 10 * time.Second},
+		client: &http.Client{Timeout: 30 * time.Second},
 	}
 }
 
 func (e *EmailService) SendEmail(to, subject, body string) error {
-	// TODO: Implement actual SendGrid API integration
-
 	if e.config.SendGridAPIKey == "" {
-		fmt.Printf("SendGrid API key not configured. Using mock implementation.\n")
-		fmt.Printf("Sending email to: %s\nSubject: %s\nBody: %s\n", to, subject, body)
-		return nil
+		return e.mockSendEmail(to, subject, body)
 	}
 
-	// Real SendGrid API implementation:
-	url := "https://api.sendgrid.com/v3/mail/send"
+	url := fmt.Sprintf("%s/mail/send", e.config.SendGridURL)
 
-	emailData := map[string]interface{}{
-		"personalizations": []map[string]interface{}{
+	emailData := SendGridEmail{
+		Personalizations: []SendGridPersonalization{
 			{
-				"to": []map[string]string{
-					{"email": to},
+				To: []SendGridTo{
+					{
+						Email: to,
+					},
 				},
 			},
 		},
-		"from": map[string]string{
-			"email": "your-verified-sender@yourdomain.com",
+		From: SendGridFrom{
+			Email: e.config.FromEmail,
+			Name:  e.config.FromName,
 		},
-		"subject": subject,
-		"content": []map[string]string{
+		Subject: subject,
+		Content: []SendGridContent{
 			{
-				"type":  "text/plain",
-				"value": body,
+				Type:  "text/plain",
+				Value: body,
 			},
 		},
 	}
 
-	jsonData, _ := json.Marshal(emailData)
-	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	jsonData, err := json.Marshal(emailData)
+	if err != nil {
+		return fmt.Errorf("failed to marshal email data: %v", err)
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %v", err)
+	}
+
 	req.Header.Set("Authorization", "Bearer "+e.config.SendGridAPIKey)
 	req.Header.Set("Content-Type", "application/json")
 
@@ -66,10 +99,16 @@ func (e *EmailService) SendEmail(to, subject, body string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusAccepted {
-		return fmt.Errorf("sendgrid API error: %d", resp.StatusCode)
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("sendgrid API error: %d - %s", resp.StatusCode, string(body))
 	}
 
-	fmt.Printf("Sending email to: %s\nSubject: %s\nBody: %s\n", to, subject, body)
+	fmt.Printf("Successfully sent email to: %s\nSubject: %s\nBody: %s\n", to, subject, body)
+	return nil
+}
 
+func (e *EmailService) mockSendEmail(to, subject, body string) error {
+	fmt.Printf("SendGrid API key not configured. Using mock implementation.\n")
+	fmt.Printf("Sending email to: %s\nSubject: %s\nBody: %s\n", to, subject, body)
 	return nil
 }

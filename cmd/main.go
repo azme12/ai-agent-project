@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 
@@ -43,16 +43,55 @@ func main() {
 	http.HandleFunc("/schedule", scheduleHandler)
 	http.HandleFunc("/email", emailHandler)
 	http.HandleFunc("/nlp", nlpHandler)
+	http.HandleFunc("/status", statusHandler)
 
-	log.Printf("Starting HTTP server on :8080")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	// Use configured port
+	port := cfg.ServerPort
+	if port == "" {
+		port = "8080"
+	}
+
+	logr.Info("Starting HTTP server", "port", port)
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		logr.Error("HTTP server failed", "error", err)
+		os.Exit(1)
 	}
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("OK"))
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":  "healthy",
+		"service": "ai-agent",
+		"version": "1.0.0",
+	})
+}
+
+func statusHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":  "running",
+		"service": "ai-agent",
+		"endpoints": []string{
+			"GET /health",
+			"POST /schedule",
+			"POST /email",
+			"POST /nlp",
+			"GET /status",
+		},
+	})
 }
 
 func scheduleHandler(w http.ResponseWriter, r *http.Request) {
@@ -66,6 +105,7 @@ func scheduleHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to read body", http.StatusBadRequest)
 		return
 	}
+	defer r.Body.Close()
 
 	var req struct {
 		Task string `json:"task"`
@@ -75,13 +115,23 @@ func scheduleHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := agentService.ProcessTask(req.Task); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if req.Task == "" {
+		http.Error(w, "Task is required", http.StatusBadRequest)
 		return
 	}
 
+	if err := agentService.ProcessTask(req.Task); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to process task: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "success"})
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":  "success",
+		"message": "Task processed successfully",
+		"task":    req.Task,
+	})
 }
 
 func emailHandler(w http.ResponseWriter, r *http.Request) {
@@ -95,6 +145,7 @@ func emailHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to read body", http.StatusBadRequest)
 		return
 	}
+	defer r.Body.Close()
 
 	var req struct {
 		Task string `json:"task"`
@@ -104,13 +155,23 @@ func emailHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := agentService.ProcessTask(req.Task); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if req.Task == "" {
+		http.Error(w, "Task is required", http.StatusBadRequest)
 		return
 	}
 
+	if err := agentService.ProcessTask(req.Task); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to process email task: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "success"})
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":  "success",
+		"message": "Email task processed successfully",
+		"task":    req.Task,
+	})
 }
 
 func nlpHandler(w http.ResponseWriter, r *http.Request) {
@@ -124,6 +185,7 @@ func nlpHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to read body", http.StatusBadRequest)
 		return
 	}
+	defer r.Body.Close()
 
 	var req struct {
 		Command string `json:"command"`
@@ -133,12 +195,22 @@ func nlpHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, err := agentService.ProcessNLPCommand(req.Command)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if req.Command == "" {
+		http.Error(w, "Command is required", http.StatusBadRequest)
 		return
 	}
 
+	response, err := agentService.ProcessNLPCommand(req.Command)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to process NLP command: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"response": response})
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":   "success",
+		"response": response,
+		"command":  req.Command,
+	})
 }

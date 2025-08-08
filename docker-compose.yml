@@ -6,11 +6,32 @@ services:
     ports:
       - "8080:8080"
     environment:
+      # API Keys
       - GOOGLE_CALENDAR_API_KEY=${GOOGLE_CALENDAR_API_KEY:-}
       - SENDGRID_API_KEY=${SENDGRID_API_KEY:-}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-      - SERVER_PORT=8080
-      - LOG_LEVEL=info
+      
+      # Server Configuration
+      - SERVER_PORT=${SERVER_PORT:-8080}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      
+      # API URLs and Endpoints
+      - GOOGLE_CALENDAR_URL=${GOOGLE_CALENDAR_URL:-https://www.googleapis.com/calendar/v3}
+      - SENDGRID_URL=${SENDGRID_URL:-https://api.sendgrid.com/v3}
+      - GEMINI_URL=${GEMINI_URL:-https://generativelanguage.googleapis.com/v1beta}
+      
+      # Email Configuration
+      - FROM_EMAIL=${FROM_EMAIL:-azmetefera07@gmail.com}
+      - FROM_NAME=${FROM_NAME:-AI Assistant}
+      - USER_EMAIL=${USER_EMAIL:-azmetefera07@gmail.com}
+      
+      # Calendar Configuration
+      - CALENDAR_ID=${CALENDAR_ID:-primary}
+      - TIMEZONE=${TIMEZONE:-UTC}
+      
+      # Scheduler Configuration
+      - DAILY_REMINDER_TIME=${DAILY_REMINDER_TIME:-09:00}
+      - MEETING_REMINDER_MINUTES=${MEETING_REMINDER_MINUTES:-15}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]

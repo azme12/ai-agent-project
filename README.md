@@ -4,15 +4,16 @@ An intelligent AI agent that automates executive assistant tasks including sched
 
 ##  Project Overview
 
-This AI agent serves as an **Executive Assistant in a Tech Startup**, automating high-impact, repetitive tasks to increase productivity and efficiency.
+This AI agent serves as an **Executive Assistant in a Tech Startup**, automating high-impact, repetitive tasks to increase productivity and efficiency. The agent uses advanced natural language processing to understand user commands and takes proactive actions to manage your schedule, communications, and tasks.
 
-### Core Features
+###  Core Features
 
-- **📅 Meeting Scheduling**: Automatically schedule meetings using Google Calendar API
-- **📧 Email Automation**: Send emails and follow-ups using SendGrid API
-- **🧠 Natural Language Processing**: Process commands using Google Gemini API
-- **⏰ Proactive Reminders**: Automated daily task reminders and meeting notifications
+- **📅 Smart Meeting Scheduling**: Automatically schedule meetings using Google Calendar API with natural language parsing
+- **📧 Email Automation**: Send emails and follow-ups using SendGrid API with intelligent content generation
+- **🧠 Natural Language Processing**: Process commands using Google Gemini API for human-like understanding
+- **⏰ Proactive Reminders**: Automated daily task reminders, meeting notifications, and weekly/monthly summaries
 - **🌐 REST API**: HTTP endpoints for triggering actions programmatically
+- **⚙️ Configurable**: All settings via environment variables for easy deployment
 
 ## 🏗️ Architecture
 
@@ -31,8 +32,8 @@ This AI agent serves as an **Executive Assistant in a Tech Startup**, automating
 │ • /schedule     │    │ • Scheduler     │    │ • Google        │
 │ • /email        │    │ • Logger        │    │   Calendar      │
 │ • /nlp          │    │ • Config        │    │ • SendGrid      │
-└─────────────────┘    └─────────────────┘    │ • Gemini        │
-                                              └─────────────────┘
+│ • /status       │    │ • Parser        │    │ • Gemini        │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
 ## 🚀 Quick Start
@@ -55,30 +56,65 @@ This AI agent serves as an **Executive Assistant in a Tech Startup**, automating
 
 2. **Set up environment variables**
    ```bash
-   export GOOGLE_CALENDAR_API_KEY="your_calendar_api_key"
-   export SENDGRID_API_KEY="your_sendgrid_api_key"
-   export GEMINI_API_KEY="your_gemini_api_key"
-   export SERVER_PORT="8080"
-   export LOG_LEVEL="info"
+   # Copy the example environment file
+   cp env.example .env
+   
+   # Edit the .env file with your API keys
+   nano .env
    ```
 
-3. **Run the application**
+3. **Install dependencies**
+   ```bash
+   go mod download
+   ```
+
+4. **Run the application**
    ```bash
    go run cmd/main.go
    ```
 
-4. **Test the health endpoint**
+5. **Test the health endpoint**
    ```bash
    curl http://localhost:8080/health
    ```
 
-## 📋 API Endpoints
+## 📋 API Documentation
 
 ### Health Check
 ```bash
 GET /health
 ```
-Returns service status.
+Returns service status and version information.
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "service": "ai-agent",
+  "version": "1.0.0"
+}
+```
+
+### Service Status
+```bash
+GET /status
+```
+Returns service status and available endpoints.
+
+**Response:**
+```json
+{
+  "status": "running",
+  "service": "ai-agent",
+  "endpoints": [
+    "GET /health",
+    "POST /schedule",
+    "POST /email",
+    "POST /nlp",
+    "GET /status"
+  ]
+}
+```
 
 ### Schedule Meeting
 ```bash
@@ -86,7 +122,16 @@ POST /schedule
 Content-Type: application/json
 
 {
-  "task": "Schedule a meeting with John tomorrow at 2 PM"
+  "task": "Schedule a meeting with john@example.com tomorrow at 2 PM about project review"
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Task processed successfully",
+  "task": "Schedule a meeting with john@example.com tomorrow at 2 PM about project review"
 }
 ```
 
@@ -96,7 +141,16 @@ POST /email
 Content-Type: application/json
 
 {
-  "task": "Send email to client@example.com about project update"
+  "task": "Send email to client@example.com saying thank you for the meeting"
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Email task processed successfully",
+  "task": "Send email to client@example.com saying thank you for the meeting"
 }
 ```
 
@@ -110,19 +164,39 @@ Content-Type: application/json
 }
 ```
 
+**Response:**
+```json
+{
+  "status": "success",
+  "response": "I'll check your calendar for today's meetings...",
+  "command": "What meetings do I have today?"
+}
+```
+
 ## 🔧 Configuration
 
-The agent uses environment variables for configuration:
+The agent uses environment variables for all configuration. Copy `env.example` to `.env` and customize:
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `GOOGLE_CALENDAR_API_KEY` | Google Calendar API key | "" |
-| `SENDGRID_API_KEY` | SendGrid API key | "" |
-| `GEMINI_API_KEY` | Google Gemini API key | "" |
-| `SERVER_PORT` | HTTP server port | "8080" |
-| `LOG_LEVEL` | Logging level | "info" |
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `GOOGLE_CALENDAR_API_KEY` | Google Calendar API key | "" | Yes* |
+| `SENDGRID_API_KEY` | SendGrid API key | "" | Yes* |
+| `GEMINI_API_KEY` | Google Gemini API key | "" | Yes* |
+| `SERVER_PORT` | HTTP server port | "8080" | No |
+| `LOG_LEVEL` | Logging level | "info" | No |
+| `GOOGLE_CALENDAR_URL` | Google Calendar API URL | "https://www.googleapis.com/calendar/v3" | No |
+| `SENDGRID_URL` | SendGrid API URL | "https://api.sendgrid.com/v3" | No |
+| `GEMINI_URL` | Gemini API URL | "https://generativelanguage.googleapis.com/v1beta" | No |
+| `FROM_EMAIL` | Sender email address | "ai-assistant@yourdomain.com" | No |
+| `FROM_NAME` | Sender name | "AI Assistant" | No |
+| `CALENDAR_ID` | Google Calendar ID | "primary" | No |
+| `TIMEZONE` | Timezone for events | "UTC" | No |
+| `DAILY_REMINDER_TIME` | Daily reminder time | "09:00" | No |
+| `MEETING_REMINDER_MINUTES` | Meeting reminder minutes | 15 | No |
 
-## Use Cases
+*Required for full functionality. Without API keys, the service runs in mock mode.
+
+## 🎯 Use Cases
 
 ### Executive Assistant Tasks Automated
 
@@ -130,29 +204,64 @@ The agent uses environment variables for configuration:
    - Schedule meetings based on natural language commands
    - Send meeting reminders 15 minutes before start
    - Handle meeting conflicts and rescheduling
+   - Extract attendees, times, and topics from natural language
 
 2. **Email Automation**
    - Send follow-up emails after meetings
    - Send daily task reminders
    - Process email requests via natural language
+   - Generate email content based on context
 
 3. **Task Management**
-   - Daily task summaries
+   - Daily task summaries at 9 AM
+   - Weekly summaries on Mondays
+   - Monthly summaries on the 1st
    - Proactive reminders for deadlines
-   - Natural language task creation
 
 4. **Calendar Integration**
    - Sync with Google Calendar
    - Check availability
    - Manage recurring meetings
+   - Query calendar information
 
 ## 🔄 Proactive Actions
 
 The agent runs proactive tasks in the background:
 
-- **Daily Reminders**: Sends task summaries at 9 AM
-- **Meeting Alerts**: Notifies 15 minutes before meetings
+- **Daily Reminders**: Sends task summaries at configured time (default: 9 AM)
+- **Meeting Alerts**: Notifies before meetings (default: 15 minutes)
+- **Weekly Summaries**: Sends weekly summaries on Mondays
+- **Monthly Summaries**: Sends monthly summaries on the 1st
 - **Periodic Checks**: Monitors calendar and tasks every minute
+
+## 🧪 Testing
+
+### Run the Test Suite
+```bash
+# Make sure the service is running first
+go run cmd/main.go
+
+# In another terminal, run tests
+./test.sh
+```
+
+### Manual Testing Examples
+```bash
+# Test scheduling
+curl -X POST http://localhost:8080/schedule \
+  -H "Content-Type: application/json" \
+  -d '{"task": "Schedule meeting with team tomorrow at 10 AM"}'
+
+# Test email
+curl -X POST http://localhost:8080/email \
+  -H "Content-Type: application/json" \
+  -d '{"task": "Send email to john@example.com about project status"}'
+
+# Test NLP
+curl -X POST http://localhost:8080/nlp \
+  -H "Content-Type: application/json" \
+  -d '{"command": "What is my schedule for today?"}'
+```
 
 ## 🛠️ Development
 
@@ -174,6 +283,10 @@ The agent runs proactive tasks in the background:
 ├── pkg/
 │   └── logger/
 │       └── logger.go        # Logging utilities
+├── env.example              # Environment variables template
+├── docker-compose.yml       # Docker Compose configuration
+├── Dockerfile               # Docker build configuration
+├── test.sh                  # Test script
 └── go.mod                   # Go module file
 ```
 
@@ -182,40 +295,22 @@ The agent runs proactive tasks in the background:
 1. **New API Integration**: Add service in `internal/api/`
 2. **New Task Type**: Update handler in `internal/agent/handler.go`
 3. **New Endpoint**: Add handler in `cmd/main.go`
+4. **New Configuration**: Add to `internal/config/config.go`
 
-## 🧪 Testing
-
-### Manual Testing
+### Development Workflow
 ```bash
-# Test scheduling
-curl -X POST http://localhost:8080/schedule \
-  -H "Content-Type: application/json" \
-  -d '{"task": "Schedule meeting with team tomorrow at 10 AM"}'
+# Start development
+go run cmd/main.go
 
-# Test email
-curl -X POST http://localhost:8080/email \
-  -H "Content-Type: application/json" \
-  -d '{"task": "Send email to john@example.com about project status"}'
+# Run tests
+./test.sh
 
-# Test NLP
-curl -X POST http://localhost:8080/nlp \
-  -H "Content-Type: application/json" \
-  -d '{"command": "What is my schedule for today?"}'
+# Build for production
+go build -o ai-agent cmd/main.go
+
+# Run production build
+./ai-agent
 ```
-
-## 🔒 Security
-
-- API keys are loaded from environment variables
-- No hardcoded credentials in source code
-- HTTP endpoints validate input data
-- Error handling prevents information leakage
-
-## 📈 Monitoring
-
-- Health check endpoint for monitoring
-- Structured logging with different levels
-- Error tracking and reporting
-- Performance metrics via HTTP endpoints
 
 ## 🚀 Deployment
 
@@ -256,12 +351,6 @@ docker-compose logs -f
 docker-compose down
 ```
 
-#### Docker Testing
-```bash
-# Run automated Docker tests
-./docker-test.sh
-```
-
 #### Environment Variables with Docker
 ```bash
 # Run with environment variables
@@ -272,6 +361,46 @@ docker run -d --name ai-agent \
   -e GEMINI_API_KEY="your_key" \
   ai-agent
 ```
+
+### Cloud Deployment
+
+#### Google Cloud Run (Recommended)
+```bash
+# Build and deploy to Cloud Run
+gcloud run deploy ai-agent \
+  --source . \
+  --platform managed \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --set-env-vars GOOGLE_CALENDAR_API_KEY=your_key,SENDGRID_API_KEY=your_key,GEMINI_API_KEY=your_key
+```
+
+#### AWS ECS
+```bash
+# Build and push to ECR
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin your-account.dkr.ecr.us-east-1.amazonaws.com
+docker build -t ai-agent .
+docker tag ai-agent:latest your-account.dkr.ecr.us-east-1.amazonaws.com/ai-agent:latest
+docker push your-account.dkr.ecr.us-east-1.amazonaws.com/ai-agent:latest
+```
+
+## 🔒 Security
+
+- API keys are loaded from environment variables
+- No hardcoded credentials in source code
+- HTTP endpoints validate input data
+- Error handling prevents information leakage
+- Docker runs as non-root user
+- Health checks for monitoring
+
+## 📈 Monitoring
+
+- Health check endpoint for monitoring
+- Structured logging with different levels
+- Error tracking and reporting
+- Performance metrics via HTTP endpoints
+- Docker health checks
+- Graceful shutdown handling
 
 ## 🤝 Contributing
 
@@ -291,6 +420,20 @@ For issues and questions:
 - Create an issue in the GitHub repository
 - Check the logs for debugging information
 - Verify API keys are correctly configured
+- Test with the provided test script
+
+## 🎯 Assignment Compliance
+
+This project meets all the assignment requirements:
+
+✅ **Role & Industry**: Executive Assistant in Tech Startup  
+✅ **Tasks Automated**: Meeting scheduling, email automation, task reminders  
+✅ **Third-party APIs**: Google Calendar API, SendGrid API, Gemini API  
+✅ **Proactive Actions**: Daily reminders, meeting alerts, weekly/monthly summaries  
+✅ **Backend Focus**: Robust backend with minimal UI (REST API)  
+✅ **Free Tier Usage**: All APIs support free tiers  
+✅ **Natural Language Processing**: Advanced command parsing and understanding  
+✅ **Automation**: Scheduler runs proactive tasks automatically  
 
 ---
 
